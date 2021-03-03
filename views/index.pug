@@ -1,0 +1,127 @@
+extends layout
+
+block content
+    body
+        #startMenuWrapper
+            #startMenu1
+                .row
+                    .col-6
+                        h3 A game template
+                    .col-6
+                        img(src="img/js_template.jpg" width="50%")
+                .row
+                    br
+                    .col-6
+                        h4 Login data
+                        if development
+                            input#playerNameInput(type="text" tabindex="0" autofocus="" placeholder="Enter your name here" maxlength="25" value="testuser")
+                            input#playerPasswordInput(type="password" tabindex="0" autofocus="" placeholder="Enter your password" maxlength="25" value="blabla0")
+                        else
+                            input#playerNameInput(type="text" tabindex="0" autofocus="" placeholder="Enter your name here" maxlength="25")
+                            input#playerPasswordInput(type="password" tabindex="0" autofocus="" placeholder="Enter your password" maxlength="25")
+
+                    .col-6
+                        h4 Games ongoing
+                        div
+                            a.intro-banner-vdo-play-btn.pinkBg(font-size="20px" href="#" target="_blank")
+                                #ongoinggame
+                                span.ripple.pinkBg
+                                span.ripple.pinkBg
+                                span.ripple.pinkBg
+                            div
+                .row
+                    br
+                    #input-error(style="opacity: 0")
+                        | -
+                    button#loginButton(onclick="atheios.authenticationRequest(document.getElementById('playerNameInput').value, getElementById('playerPasswordInput').value, gametoken, loginResponse)") Login
+                    a(onclick="window.location.href='https://play.atheios.org'")
+                    button#AthButton Register via Atheios
+                    a(onclick="window.location.href='https://play.ether1.org'")
+                    button#ETHOButton Register via Ether 1
+                    br
+                    button#GARPsettingsButton GARP info
+                    #GARPsettings
+                        h3 GARP info
+                        ul
+                            #gameinfo
+                    #instructions
+                        h3 Gameplay
+                        ul
+                            li There is no real gameplay in this game, after all this is a demo
+                            li Take a look at the developer console to see the message flow
+                            lI Source code can be checkout out at our github
+            #startMenu2
+                .row
+                    .col-6
+                        h3 A game template
+                    .col-6
+                        img(src="img/js_template.jpg" width="50%")
+                .row
+                    p
+                    #helloPlayer
+                    #currencyselector
+                        .row
+                            .col-md-6
+                                label Choose the coin You want to wage:
+                            .col-md-6
+                                select#currency.form-control
+                                    #currencyselectoroptions
+                    input#wageGARP(type="text" maxlength="25" disabled="")
+                    input#authToken(type="text" name="authToken" hidden="hidden")
+                    input#gameId(type="text" name="gameId" hidden="hidden")
+                    input#userId(type="text" name="userId" hidden="hidden")
+                    input#gameToken(type="text" name="gameToken" hidden="hidden")
+                    button#leaderboardButton(onclick="atheios.gameLadderRequest(document.getElementById('authToken').value, document.getElementById('userId').value, 0, document.getElementById('gameId').value, 1, ladderResponse)") Leaderboard
+                    button#startButton(onclick="atheios.setWageRequest(document.getElementById('authToken').value, document.getElementById('wageGARP').value, document.getElementById('currency').value, document.getElementById('gameId').value, document.getElementById('userId').value, document.getElementById('gameToken').value,wageResponse)") Start game
+
+                    button#settingsButton Settings
+                    br
+                    #settings
+                        h3 Settings
+                        ul
+                            label
+                                input#fen(type="text" name="fen" size="64")
+                                | Enter FEN string
+                    #instructions
+                        h3 Waging
+                        ul
+                            li Select the coin You want to wage.
+                            li
+                                | The wage amount is determined by the game and Your gaming account needs to have at least the waging amount in place.
+            #startMenu3
+                .row
+                    .col-6
+                        h3 A game template
+                    .col-6
+                        img(src="img/js_template.jpg" width="50%")
+                .row
+                    h3 Leaderboard
+                .row
+                    #leaderboardheader
+                .row
+                    #leaderboard
+                .row
+                    button#leaderboardReturnButton(onclick="returnToWage()") Return
+                    br
+
+            #startGame
+                .container.bg-white.shadow
+                    .row
+                        .col-md-4
+                            #player1
+                        .col-md-4
+                            #player2
+                        .col-md-4
+                            #gameStatus.alert.alert-secondary
+
+                    .container.bg-white.shadow
+                        #board(style="width: 500px; height: 500px; margin: auto")
+                        div(style="margin: auto")
+                            #player
+                            #state Join Game
+                        p
+                    .row
+                        .col-md
+                            button#resignButton.button.btn(onclick="stopGame()") Stop Game
+
+

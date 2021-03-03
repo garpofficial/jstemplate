@@ -1,0 +1,442 @@
+doctype html
+doctype html
+html(lang="en")
+  head
+    // Meta Properties
+    meta(name="description" content="JS template for a game using GARP.")
+    meta(name="keywords" content="Crypto currency, gaming, GARP")
+    meta(property="og:title" content="JS template for a game using GARP")
+    meta(property="og:description" content="A JS template")
+    meta(property="og:image" content="https://jstemplate.garp.io/img/jstemplate.jpg")
+    meta(property="og:url" content="https://jstemplate.garp.io")
+    meta(name="twitter:card" content="jstemplate.garp.io/img/jstemplate.jpg")
+    // Non-Essential, But Recommended
+    meta(property="og:site_name" content="Crypto Chess - with GARP")
+    meta(name="twitter:image:alt" content="Crypto Chess with GARP - multiplayer game implementation")
+    meta(charset="UTF-8")
+    title JS template for a game using GARP
+    meta(name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no")
+    // CSS
+    link(rel="stylesheet" href="bootstrap/dist/css/bootstrap.css")
+
+    link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous")
+    link(rel="stylesheet" href="css/main.css")
+
+  body
+    .main-page.d-flex.flex-column.flex-fill
+      .bg.flex-fill
+        block content
+
+  // JS
+  script(src="//code.jquery.com/jquery-2.2.0.min.js")
+  script(src="javascript/app.js")
+  script(type="text/javascript" src="https://js.garp.io/v0.3.0/atheios.js")
+  script(type="text/javascript" src="https://js.garp.io/v0.3.0/atheios-api.js")
+  script(type="text/javascript" src="https://js.garp.io/v0.3.0/hmac-sha256.js")
+
+  // Hooks into the GARP framework
+  script(type="text/javascript").
+    var authToken;
+    var userId;
+    var userName;
+    var gameId;
+    var roomId;
+    var playId;
+    var athValue;
+    var athWage;
+    var currency="ATH";
+    var playerOrder;
+    var roomUsers;
+    var roomSerial;
+
+    //Create an atheios object to be used
+    var atheios = new Atheios();
+    const gametoken="!{gametoken}";
+    const secret="!{gamesecret}";
+    //Initialse the SDK
+    function init() {
+      atheios.initLive({
+        key: gametoken,
+        secret: secret,
+        local: "!{development}",
+        testapi: false,
+        onNonce: onNonce,
+        onInit: onInit,
+        onMessage: onMessage,
+        logger: console.log,
+      });
+    }
+    //Callback function to hmac sha256 a nonce with the secret. It's assumed you will have your own method of securing the secret;
+    function onNonce(nonce) {
+      return CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(nonce, secret));
+    }
+    //Callback to handle when the SDK is initialised and ready to go
+    function onInit() {
+      console.log("Initialised");
+      atheios.gameInfoRequest(gametoken, gameInfoResponse);
+    }
+    //Callback to handle async messages from the portal platform
+    function onMessage(response) {
+      console.log("onMessage");
+    }
+
+    //Callback to handle async messages from GARP
+    function gameInfoResponse(response) {
+      console.log("gameInfoResponse:");
+      console.log(JSON.stringify(response));
+      var id=document.getElementById("ongoinggame");
+      id.innerHTML = response.ongoinggame;
+      var id = document.getElementById("gameinfo");
+      //            id.innerHTML += "<h4>Description</h4>" + response.description;
+      var coins=response.currency.split('|');
+      var coinsstr="";
+      for (var i=0;i<coins.length;i++) {
+        coinsstr+=coins[i];
+        if (i<coins.length-1) {
+          coinsstr+=", ";
+        }
+      }
+      coinsstr+=" are supported.";
+      id.innerHTML += coinsstr;
+      id.innerHTML += "<h4>Rules to win</h4>" +
+              "<table width='100%'>" +
+              "<tr><td>Wage</td><td>" + response.wage + "</td></tr>" +
+              "<tr><td>Distribution to player</td><td>" + response.scheme*100 + "%</td></tr>" +
+              "<tr><td>Distribution to developer</td><td>" + Math.round((1-response.scheme)*100)  + "%</td></tr>" +
+              "<tr><td>Player 1. place</td><td>" + response.player1*10 + "%</td></tr>" +
+              "<tr><td>Player 2. place</td><td>" + response.player2 * 10 + "%</td></tr>" +
+              "<tr><td>Player 3. place</td><td>" + response.player3*10 + "%</td></tr>" +
+              "<tr><td>Player 4. place</td><td>" + response.player4*10 + "%</td></tr>" +
+              "<tr><td>Player 5. place</td><td>" + response.player5*10 + "%</td></tr>" +
+              "</table>";
+      athWage=response.wage;
+    }
+
+    function loginResponse(response) {
+      var error;
+      error = document.querySelector("#input-error");
+      if (response.error != undefined) {
+        error.style.opacity = 1;
+        error.innerHTML = response.error.details;
+      } else {
+        error.style.opacity = 0;
+
+        var helloplayer = document.querySelector("#helloPlayer");
+        helloplayer.innerHTML = "Hello, " + response.displayName;
+        helloplayer.innerHTML += "<input type='text' id='playerNameInputGARP' hidden value='" + response.displayName + "'>";
+        makeVisible('startMenu2');
+
+        userId = response.userId;
+        userName = response.displayName;
+        gameId = response.gameId;
+        authToken = response.authToken;
+        atheios.accountDetailsRequest(authToken, userId, accountResponse);
+        authToken = response.authToken;
+        userId = response.userId;
+
+      }
+      console.log(JSON.stringify(response));
+    }
+
+    function accountResponse(response) {
+      var ethoValue;
+      var athValue;
+      console.log("accountRequestResponse:");
+      console.log(JSON.stringify(response));
+      if (response.error == undefined) {
+        var id = document.getElementById("currency");
+        var str="";
+        for(let i=0;i<response.currency.length;i++) {
+          str+=  "  <option value=\""+ response.currency[i] + "\">" + response.currency[i] + ": " + response.value[i] + "</option>\n";
+        }
+        id.innerHTML = str;
+        document.getElementById("authToken").value = authToken;
+        document.getElementById("userId").value = userId;
+        document.getElementById("gameId").value = gameId;
+        document.getElementById("gameToken").value = gametoken;
+        document.getElementById("wageGARP").value = athWage;
+      } else {
+        error.style.opacity = 1;
+        error.innerHTML = "Login failed:" + response.error.details;
+      }
+    }
+
+    function joinRoomResponse(response) {
+      console.log("joinRoomResponse:");
+      console.log(JSON.stringify(response));
+      console.log("Done");
+      document.getElementById("startGameBtn").disabled = true;
+
+      var error;
+      error = document.querySelector("#input-error");
+      if (response.error != undefined) {
+        error.style.opacity = 1;
+        error.innerHTML = response.error.details;
+      } else {
+        error.style.opacity = 0;
+        makeVisible('startMenu4');
+        roomSerial = response["roomSerial"];
+        const roomName = document.getElementById('room-name');
+        roomName.innerText = response.roomName+"#"+response.roomId;
+        //
+        const userList = document.getElementById('users');
+        userList.innerHTML = '';
+        playerOrder=response.roomUsers.length;
+        for (i = 0; i < response.roomUsers.length; i++) {
+          const li = document.createElement('li');
+          li.innerText = response.roomUsers[i].username;
+          userList.appendChild(li);
+        }
+
+        const chatForm = document.getElementById('chat-form');
+        chatForm.addEventListener('submit', e => {
+          e.preventDefault();
+
+          // Get message text
+          let msg = e.target.elements.msg.value;
+
+          msg = msg.trim();
+
+          if (!msg) {
+            return false;
+          }
+
+          // Emit message to server
+          atheios.sendChatRequest(authToken, userId, response.roomId, 'message', msg, sendChatResponse);
+
+          // Clear input
+          e.target.elements.msg.value = '';
+          e.target.elements.msg.focus();
+        });
+
+        // Now we announce that new user has joined
+        atheios.sendChatRequest(authToken, userId, response.roomId, 'useradded', '', sendChatResponse);
+        socket.emit('joinroom', roomSerial);
+
+      }
+
+    }
+
+    function createRoomResponse(response) {
+      console.log("createRoomResponse:");
+      console.log(JSON.stringify(response));
+      console.log("Done");
+
+      roomId=response.roomId;
+      playerOrder=1;
+      console.log("roomId %s", roomId);
+
+      document.getElementById("lockRoomBtn").disabled=true;
+      document.getElementById("startGameBtn").disabled=true;
+
+
+      var error;
+      error = document.querySelector("#input-error");
+      if (response.error != undefined) {
+        error.style.opacity = 1;
+        error.innerHTML = response.error.details;
+      } else {
+        error.style.opacity = 0;
+        makeVisible('startMenu4');
+        roomSerial = response["roomSerial"];
+        const roomName = document.getElementById('room-name');
+        roomName.innerText = response.roomName;
+        document.getElementById("roomId").value = roomId;
+
+        const userList = document.getElementById('users');
+        userList.innerHTML = '';
+        for (i=0;i<response.roomUsers.length;i++) {
+          const li = document.createElement('li');
+          li.innerText = response.roomUsers[i].username;
+          userList.appendChild(li);
+        }
+
+        const chatForm = document.getElementById('chat-form');
+        chatForm.addEventListener('submit', e => {
+          e.preventDefault();
+
+          // Get message text
+          let msg = e.target.elements.msg.value;
+
+          msg = msg.trim();
+
+          if (!msg) {
+            return false;
+          }
+
+          // Emit message to server
+          atheios.sendChatRequest(authToken, userId, response.roomId, 'message', msg, sendChatResponse);
+
+          // Clear input
+          e.target.elements.msg.value = '';
+          e.target.elements.msg.focus();
+        });
+
+        // Now we announce that new user has joined
+        atheios.sendChatRequest(authToken, userId, response.roomId, 'useradded', '', sendChatResponse);
+        socket.emit('joinroom', roomSerial);
+
+
+      }
+    }
+
+    function sendChatResponse(response) {
+      console.log("sendChatResponse:");
+      console.log(JSON.stringify(response));
+    }
+
+    function wageResponse(response) {
+      console.log("wageRequestResponse:");
+      console.log(JSON.stringify(response));
+      if (response.error == undefined) {
+        athValue = response.value;
+        playId= response.playid;
+        currency= response.currency;
+        makeVisible("startGame");
+        startGame();
+      } else {
+        error.style.opacity = 1;
+        error.innerHTML = "Waging failed:" + response.error.details;
+      }
+    }
+    function gamefinishResponse(response) {
+      console.log("gameFinishResponse:");
+      console.log(JSON.stringify(response));
+    }
+    function ladderResponse(response) {
+      var maxlines=15;
+      var i;
+
+      makeVisible('startMenu3');
+      // Calculate the number of days left
+      var days = Math.floor(response.timeLeft / 86400);
+      // After deducting the days calculate the number of hours left
+      var hours = Math.floor((response.timeLeft - (days * 86400)) / 3600);
+      // After days and hours , how many minutes are left
+      var minutes = Math.floor((response.timeLeft - (days * 86400) - (hours * 3600)) / 60);
+      // Finally how many seconds left after removing days, hours and minutes.
+      var secs = Math.floor((response.timeLeft - (days * 86400) - (hours * 3600) - (minutes * 60)));
+      var id = document.getElementById("leaderboardheader");
+      id.innerHTML = "<p></p><table class='table'>" +
+              "<tr scope='row'><td>Time to game resolution</td><td>" + days + "D " + hours + "H " + minutes + "M " + secs + "S " + " left" + "</td></tr>" +
+              "<tr scope='row'><td>In Play ATH</td><td>" + response.inPlayATH + " ATH </td></tr>" +
+              "<tr scope='row'><td>In Play ETHO</td><td>" + response.inPlayETHO + " ETHO </td></tr>" +
+              "<tr scope='row'><td>Games played</td><td>" + response.totalGames + "</td></tr></table>";
+      var id = document.getElementById("leaderboard");
+      id.innerHTML = "";
+      if (response.ladder !== 'undefined') {
+        if (maxlines > response.ladder.length) {
+          maxlines = response.ladder.length;
+        }
+        if (response.ladder[0]!=undefined) {
+          id.innerHTML = "Last game: " + response.ladder[0].position + " position. Score: " + response.ladder[0].score + "<p><br>";
+        }
+        var s;
+        s= "<table class='table'>";
+        s += "<tr scope='row'><td>Position</td><td>Score</td><td>Display name</td><td>Wage</td><td>Date</td></tr>";
+        for (i = 1; i < maxlines; i++) {
+          s += "<tr scope='row'><td>"+ response.ladder[i].position + "</td><td>" + response.ladder[i].score +"</td><td>" + response.ladder[i].displayname +"</td><td>" + response.ladder[i].amount + " " + response.ladder[i].currency + "</td><td>" + response.ladder[i].date +"</td></tr>";
+          console.log(id.innerHTML);
+        }
+        s += "</table>";
+        id.innerHTML +=s;
+      } else {
+        id.innerHTML = "No games played yet.";
+      }
+    }
+
+
+
+
+    function leaveRoomRequestResponse(response) {
+      console.log("leaveRoomRequestResponse:");
+      console.log(JSON.stringify(response));
+    }
+
+    async function returnToStartMenu3() {
+      await atheios.leaveRoomRequest(authToken, userId, roomId, leaveRoomRequestResponse);
+      makeVisible('startMenu2');
+    }
+
+
+    function returnToWage() {
+      atheios.accountDetailsRequest(authToken, userId, accountResponse);
+      makeVisible('startMenu2');
+    }
+
+    function lockRoom(authToken, userId, gameId, roomId) {
+      atheios.lockRoomRequest(authToken, roomId, lockRoomResponse);
+      console.log("Room locked...");
+    }
+
+    function lockRoomResponse(response) {
+      console.log("lockRoomRequestResponse:");
+      console.log(JSON.stringify(response));
+      document.getElementById("startGameBtn").disabled = false;
+
+    }
+
+
+    function makeVisible(id) {
+      switch(id) {
+        case 'startMenu1':
+          document.getElementById("startMenu1").style.display = "block";
+          document.getElementById("startMenu1").style.opacity = "1";
+          document.getElementById("startMenu2").style.display = "none";
+          document.getElementById("startMenu2").style.opacity = "0";
+          document.getElementById("startMenu3").style.display = "none";
+          document.getElementById("startMenu3").style.opacity = "0";
+          document.getElementById("startGame").style.display = "none";
+          document.getElementById("startGame").style.opacity = "0";
+
+          break;
+        case 'startMenu2':
+          document.getElementById("startMenu1").style.display = "none";
+          document.getElementById("startMenu1").style.opacity = "0";
+          document.getElementById("startMenu2").style.display = "block";
+          document.getElementById("startMenu2").style.opacity = "1";
+          document.getElementById("startMenu3").style.display = "none";
+          document.getElementById("startMenu3").style.opacity = "0";
+          document.getElementById("startGame").style.display = "none";
+          document.getElementById("startGame").style.opacity = "0";
+
+          break;
+        case 'startMenu3':
+          document.getElementById("startMenu1").style.display = "none";
+          document.getElementById("startMenu1").style.opacity = "0";
+          document.getElementById("startMenu2").style.display = "none";
+          document.getElementById("startMenu2").style.opacity = "0";
+          document.getElementById("startMenu3").style.display = "block";
+          document.getElementById("startMenu3").style.opacity = "1";
+          document.getElementById("startGame").style.display = "none";
+          document.getElementById("startGame").style.opacity = "0";
+
+          break;
+        case 'startMenu4':
+          document.getElementById("startMenu1").style.display = "none";
+          document.getElementById("startMenu1").style.opacity = "0";
+          document.getElementById("startMenu2").style.display = "none";
+          document.getElementById("startMenu2").style.opacity = "0";
+          document.getElementById("startMenu3").style.display = "none";
+          document.getElementById("startMenu3").style.opacity = "0";
+          document.getElementById("startGame").style.display = "none";
+          document.getElementById("startGame").style.opacity = "0";
+          break;
+        case 'startGame':
+          document.getElementById("startMenu1").style.display = "none";
+          document.getElementById("startMenu1").style.opacity = "0";
+          document.getElementById("startMenu2").style.display = "none";
+          document.getElementById("startMenu2").style.opacity = "0";
+          document.getElementById("startMenu3").style.display = "none";
+          document.getElementById("startMenu3").style.opacity = "0";
+          document.getElementById("startGame").style.display = "block";
+          document.getElementById("startGame").style.opacity = "1";
+
+          break;
+
+      }
+    }
+
+
+    init();
+
