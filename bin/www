@@ -16,7 +16,7 @@ var roomlist=[];
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(global.config.PORT || '3011');
+var port = normalizePort(global.config.PORT || '3012');
 app.set('port', port);
 logger.info("Server started: " + global.config.httphost);
 

@@ -22,13 +22,14 @@ block content
 
                     .col-6
                         h4 Games ongoing
-                        div
-                            a.intro-banner-vdo-play-btn.pinkBg(font-size="20px" href="#" target="_blank")
-                                #ongoinggame
-                                span.ripple.pinkBg
-                                span.ripple.pinkBg
-                                span.ripple.pinkBg
-                            div
+                        div.d-flex.h-100
+                            div.align-self-center.mx-auto
+                                btn.intro-banner-vdo-play-btn.pinkBg.m-auto(font-size="20px" href="#" target="_blank")
+                                    #ongoinggame
+                                    span.ripple.pinkBg
+                                    span.ripple.pinkBg
+                                    span.ripple.pinkBg
+                                div
                 .row
                     br
                     #input-error(style="opacity: 0")
@@ -118,7 +119,7 @@ block content
                         #board(style="width: 500px; height: 500px; margin: auto")
                         div(style="margin: auto")
                             #player
-                            #state Join Game
+                            #state
                         p
                     .row
                         .col-md

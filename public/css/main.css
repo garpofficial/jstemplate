@@ -41,7 +41,7 @@ div {
 
 #ongoinggame {
     font-size: 24px;
-    alignment: center;
+    align-self: center;
     font-style: italic;
 }
 

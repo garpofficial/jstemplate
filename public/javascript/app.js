@@ -76,6 +76,9 @@ window.onload = function() {
 
 function startGame() {
     result= Math.round(Math.random()*100);
+    var resulthtml = document.getElementById('state');
+    resulthtml.innerText="You won with a score of :"+result;
+
 }
 
 function executeInterval() {
